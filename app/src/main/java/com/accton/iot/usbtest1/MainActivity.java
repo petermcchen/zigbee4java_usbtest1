@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity
 
         mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
     }
-t
+
     @Override
     public void onBackPressed() {
         if (DEBUG)
