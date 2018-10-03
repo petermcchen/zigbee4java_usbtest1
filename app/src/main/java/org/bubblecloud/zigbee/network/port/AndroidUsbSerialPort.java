@@ -28,7 +28,8 @@ import java.util.Map;
  */
 public class AndroidUsbSerialPort implements SerialPort
 {
-    private final static String TAG = "AndroidUsbSerialPort";
+    private final static String TAG = "AndUsbSerialPort";
+    private final static String SubTAG = "Ceres";
     private final static boolean DEBUG = true;
 
     private static Logger logger = LoggerFactory.getLogger(AndroidUsbSerialPort.class);
@@ -133,7 +134,7 @@ public class AndroidUsbSerialPort implements SerialPort
     public AndroidUsbSerialPort(UsbManager manager, Baud baud, DataBits dataBits, Parity parity, Stop stop)
     {
         if (DEBUG)
-            Log.d(TAG, "Call AndroidUsbSerialPort.");
+            Log.d(TAG+SubTAG, "Call AndroidUsbSerialPort.");
         this.manager  = manager;
         this.dataBits = dataBits;
         this.parity   = parity;
@@ -162,7 +163,7 @@ public class AndroidUsbSerialPort implements SerialPort
     public boolean open()
     {
         if (DEBUG)
-            Log.d(TAG, "Call open.");
+            Log.d(TAG+SubTAG, "Call open.");
         try
         {
             if(baud==null)
@@ -176,7 +177,7 @@ public class AndroidUsbSerialPort implements SerialPort
                 if (device.getVendorId() == CC2531_USB_VENDOR_ID && device.getProductId() == CC2531_USB_PRODUCT_ID)
                 {
                     if (DEBUG)
-                        Log.d(TAG, "Call open." + " found cc2531.");
+                        Log.d(TAG+SubTAG, "Call open." + " found cc2531.");
                     cc2531Device = device;
                     break;
                 }
@@ -218,7 +219,7 @@ public class AndroidUsbSerialPort implements SerialPort
                 throw new IOException("Couldn't open CDC ACM device: Wrong endpoint type");
 
             if (DEBUG)
-                Log.d(TAG, "Call open." + " read/write endpoints created done.");
+                Log.d(TAG+SubTAG, "Call open." + " read/write endpoints created done.");
 
             packetOutBuffer = ByteBuffer.allocate(writeEndpoint.getMaxPacketSize());
             packetInBuffer  = ByteBuffer.allocate(readEndpoint.getMaxPacketSize());
@@ -245,7 +246,7 @@ public class AndroidUsbSerialPort implements SerialPort
             }
 
             if (DEBUG)
-                Log.d(TAG, "Call open." + " read/write connections created done.");
+                Log.d(TAG+SubTAG, "Call open." + " read/write connections created done.");
 
             sendLineCoding();
 
@@ -483,13 +484,13 @@ public class AndroidUsbSerialPort implements SerialPort
                     UsbRequest notifiedRequest;
 
                     if (DEBUG)
-                        Log.d(TAG, "Call notificationTask.");
+                        Log.d(TAG+SubTAG, "Call notificationTask.");
 
                     while(deviceConnection!=null)
                     {
                         logger.debug("Awaiting USB response...");
                         if (DEBUG)
-                            Log.d(TAG, "Call notificationTask." + " Awaiting USB response...");
+                            Log.d(TAG+SubTAG, "Call notificationTask." + " Awaiting USB response...");
 
                         notifiedRequest = deviceConnection.requestWait();
 

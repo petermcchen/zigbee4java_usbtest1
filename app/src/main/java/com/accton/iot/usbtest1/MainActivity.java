@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onReceive(Context context, Intent intent) {
             if (DEBUG)
-                Log.d(TAG, "BroadcastReceiver called.");
+                Log.d(TAG+SubTAG, "BroadcastReceiver called.");
             switch (intent.getAction()) {
                 case UsbService.ACTION_USB_PERMISSION_GRANTED: // USB PERMISSION GRANTED
                     Toast.makeText(context, "USB Ready", Toast.LENGTH_SHORT).show();
@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (DEBUG)
-            Log.d(TAG, "Call onCreate.");
+            Log.d(TAG+SubTAG, "Call onCreate.");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -163,16 +163,6 @@ public class MainActivity extends AppCompatActivity
         bindService(bindingIntent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
-    private byte[] hexStringToByteArray(String s) { // Source, https://stackoverflow.com/questions/11208479/how-do-i-initialize-a-byte-array-in-java
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
-        }
-        return data;
-    }
-
     private void setFilters() {
         if (DEBUG)
             Log.d(TAG+SubTAG, "setFilters called.");
@@ -190,7 +180,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onBackPressed() {
         if (DEBUG)
-            Log.d(TAG, "Call onBackPressed.");
+            Log.d(TAG+SubTAG, "Call onBackPressed.");
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
