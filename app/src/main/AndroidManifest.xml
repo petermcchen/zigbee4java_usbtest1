@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.accton.iot.usbtest1">
 
-    <uses-feature android:name="android.hardware.usb.host"/>
-    <uses-feature android:name="android.hardware.usb"/>
+    <uses-feature android:name="android.hardware.usb.host" />
+    <uses-feature android:name="android.hardware.usb" />
 
     <application
         android:allowBackup="true"
@@ -22,6 +22,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".UsbService"
+            android:enabled="true">
+        </service>
     </application>
 
 </manifest>
