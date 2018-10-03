@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final static String TAG = "MainActivity";
-    private final static String SubTAG = "Ceres";
+    private final static String SubTAG = "ZBee";
     private final static boolean DEBUG = true;
 
     byte[] networkKey = null; // Default network key
@@ -228,6 +228,12 @@ public class MainActivity extends AppCompatActivity
             api.startup();
             // Handle the camera action
         } else if (id == R.id.nav_gallery) {
+            if (api == null) {
+                byte[] networkKey = null; // Default network key
+                port = new AndroidUsbSerialPort(mUsbManager);
+                dongle = new ZigBeeDongleTiCc2531Impl(port, 65535, 15, networkKey, false);
+                api = new ZigBeeApiDongleImpl(dongle, false);
+            }
             api.shutdown();
             port.close();
         } else if (id == R.id.nav_slideshow) {

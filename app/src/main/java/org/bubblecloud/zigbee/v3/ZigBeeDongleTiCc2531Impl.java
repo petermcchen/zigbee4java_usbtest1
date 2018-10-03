@@ -1,5 +1,7 @@
 package org.bubblecloud.zigbee.v3;
 
+import android.util.Log;
+
 import org.bubblecloud.zigbee.network.impl.*;
 import org.bubblecloud.zigbee.network.model.DriverStatus;
 import org.bubblecloud.zigbee.network.model.NetworkMode;
@@ -14,6 +16,9 @@ import org.slf4j.LoggerFactory;
  * ZigBee Dongle TI CC2531 implementation.
  */
 public class ZigBeeDongleTiCc2531Impl implements ZigBeeDongle {
+    private final static String TAG = "DonTiCc2531Impl";
+    private final static String SubTAG = "ZBee";
+    private final static boolean DEBUG = true;
     /**
      * The {@link Logger}.
      */
@@ -46,6 +51,8 @@ public class ZigBeeDongleTiCc2531Impl implements ZigBeeDongle {
      */
     public ZigBeeDongleTiCc2531Impl(final SerialPort serialPort, final int pan, final int channel,
                                     final byte[] networkKey, final boolean resetNetwork) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call ZigBeeDongleTiCc2531Impl.");
     	this.resetNetwork = resetNetwork;
 
         //networkManager = new ZigBeeNetworkManagerImpl(serialPort, NetworkMode.Coordinator, pan, channel, networkKey, 2500L);
@@ -56,6 +63,8 @@ public class ZigBeeDongleTiCc2531Impl implements ZigBeeDongle {
 
     @Override
     public boolean startup() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call startup.");
         if (!networkManager.startup()) {
             return false;
         }
@@ -88,11 +97,15 @@ public class ZigBeeDongleTiCc2531Impl implements ZigBeeDongle {
 
     @Override
     public void shutdown() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call shutdown.");
         networkManager.shutdown();
     }
 
     @Override
     public int sendCommand(org.bubblecloud.zigbee.v3.Command command) throws ZigBeeException {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call sendCommand.");
         if (command instanceof  ZclCommand) {
             return zclCommandTransmitter.sendCommand(((ZclCommand)command).toCommandMessage());
         }  else {
@@ -103,12 +116,16 @@ public class ZigBeeDongleTiCc2531Impl implements ZigBeeDongle {
 
     @Override
     public void addCommandListener(final CommandListener commandListener) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call addCommandListener.");
         this.zclCommandTransmitter.addCommandListener(commandListener);
         this.zdoCommandTransmitter.addCommandListener(commandListener);
     }
 
     @Override
     public void removeCommandListener(final CommandListener commandListener) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call removeCommandListener.");
         this.zclCommandTransmitter.removeCommandListener(commandListener);
         this.zdoCommandTransmitter.removeCommandListener(commandListener);
     }

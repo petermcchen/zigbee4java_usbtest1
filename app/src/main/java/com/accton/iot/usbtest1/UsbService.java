@@ -24,7 +24,7 @@ import java.util.Map;
 
 public class UsbService extends Service {
     private final static String TAG = "UsbService";
-    private final static String SubTAG = "Ceres";
+    private final static String SubTAG = "ZBee";
     private final static boolean DEBUG = true;
 
     public static final String ACTION_USB_READY = "com.felhr.connectivityservices.USB_READY";
