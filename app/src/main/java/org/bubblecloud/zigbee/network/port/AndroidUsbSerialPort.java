@@ -29,7 +29,7 @@ import java.util.Map;
 public class AndroidUsbSerialPort implements SerialPort
 {
     private final static String TAG = "AndUsbSerialPort";
-    private final static String SubTAG = "Ceres";
+    private final static String SubTAG = "ZBee";
     private final static boolean DEBUG = true;
 
     private static Logger logger = LoggerFactory.getLogger(AndroidUsbSerialPort.class);
@@ -145,6 +145,8 @@ public class AndroidUsbSerialPort implements SerialPort
     private byte[] getLineCodingBytes(Baud baud, Stop stop, Parity parity, DataBits dataBits)
     {
         final int baudValue = baud.value;
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call getLineCodingBytes.");
 
         return new byte[]
         {
@@ -177,7 +179,7 @@ public class AndroidUsbSerialPort implements SerialPort
                 if (device.getVendorId() == CC2531_USB_VENDOR_ID && device.getProductId() == CC2531_USB_PRODUCT_ID)
                 {
                     if (DEBUG)
-                        Log.d(TAG+SubTAG, "Call open." + " found cc2531.");
+                        Log.d(TAG+SubTAG, "Call open." + " found cc2531." + " USBHOST.");
                     cc2531Device = device;
                     break;
                 }
@@ -185,6 +187,10 @@ public class AndroidUsbSerialPort implements SerialPort
 
             if(!manager.hasPermission(cc2531Device))
                 manager.requestPermission(cc2531Device, null);
+            else {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "Call open." + " already have permission.");
+            }
 
             if(cc2531Device==null)
                 throw new IOException("Couldn't find CC2531 device.");
@@ -195,7 +201,8 @@ public class AndroidUsbSerialPort implements SerialPort
             UsbInterface controlInterface = cc2531Device.getInterface(0);
 
             dataInterface = cc2531Device.getInterface(1);
-
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "Call open." + " found usbinterfaces." + " USBHOST.");
             if(controlInterface.getInterfaceClass() != UsbConstants.USB_CLASS_COMM)
                 throw new IOException("Couldn't open CDC ACM device: wrong ctrl interface class");
 
@@ -205,7 +212,8 @@ public class AndroidUsbSerialPort implements SerialPort
             final UsbEndpoint
                 writeEndpoint = dataInterface.getEndpoint(1),
                 readEndpoint  = dataInterface.getEndpoint(0);
-
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "Call open." + " get endpoints." + " USBHOST.");
             if(writeEndpoint.getDirection()!=UsbConstants.USB_DIR_OUT)
                 throw new IOException("Couldn't open CDC ACM device: Wrong endpoint direction");
 
@@ -227,6 +235,8 @@ public class AndroidUsbSerialPort implements SerialPort
             try
             {
                 deviceConnection = manager.openDevice(cc2531Device);
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "Call open." + " found create connection." + " USBHOST.");
             }
             catch(SecurityException e)
             {
@@ -246,7 +256,7 @@ public class AndroidUsbSerialPort implements SerialPort
             }
 
             if (DEBUG)
-                Log.d(TAG+SubTAG, "Call open." + " read/write connections created done.");
+                Log.d(TAG+SubTAG, "Call open." + " claim interfaces." + " USBHOST.");
 
             sendLineCoding();
 
@@ -255,6 +265,8 @@ public class AndroidUsbSerialPort implements SerialPort
                 @Override
                 public int read() throws IOException
                 {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "Call read 1." + " InOut." + " size: " + readBuffer.size());
                     synchronized (readMonitor)
                     {
                         if (readBuffer.size() == 0)
@@ -282,6 +294,8 @@ public class AndroidUsbSerialPort implements SerialPort
                 @Override
                 public int read(byte[] readBufferOut) throws IOException
                 {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "Call read 2." + " InOut.");
                     synchronized (readMonitor)
                     {
                         int filled;
@@ -306,14 +320,17 @@ public class AndroidUsbSerialPort implements SerialPort
                 {
                     int bytesRead;
                     boolean isCompletePacket;
-
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "Call pullReadBuffer." + " InOut.");
                     synchronized (readMonitor)
                     {
                         while (isReading)
                         {
                             try
                             {
-                                logger.debug("Waiting for current read pull to complete");
+                                //logger.debug("Waiting for current read pull to complete");
+                                if (DEBUG)
+                                    Log.d(TAG+SubTAG, "Call pullReadBuffer." + " Waiting for current read pull to complete." + "readMonitor.wait 1");
                                 readMonitor.wait();
                             }
                             catch (InterruptedException e)
@@ -339,10 +356,15 @@ public class AndroidUsbSerialPort implements SerialPort
 
                             if (isReading) {
                                 try {
-                                    logger.debug(Thread.currentThread().getName() + ": Awaiting read request completion");
+                                    //logger.debug(Thread.currentThread().getName() + ": Awaiting read request completion");
 
-                                    while (isReading)
+                                    while (isReading) {
+                                        if (DEBUG)
+                                            Log.d(TAG+SubTAG, "Call pullReadBuffer." + " Waiting for current read pull to complete." + "readMonitor.wait 2, " + timeOutMs);
                                         readMonitor.wait(timeOutMs);
+                                        if (DEBUG)
+                                            Log.d(TAG+SubTAG, "Call pullReadBuffer." + " Waiting for current read pull to complete." + "readMonitor.wait 3, " + timeOutMs);
+                                    }
 
                                     readRequest = null;
 
@@ -375,6 +397,8 @@ public class AndroidUsbSerialPort implements SerialPort
                 @Override
                 public void write(int i) throws IOException
                 {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "Call write 1." + " InOut.");
                     if (deviceConnection == null)
                         throw new IOException("Connection closed.");
 
@@ -394,6 +418,8 @@ public class AndroidUsbSerialPort implements SerialPort
                 @Override
                 public synchronized void write(byte[] writeBufferIn) throws IOException
                 {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "Call write 2." + " InOut.");
                     if (deviceConnection == null)
                         throw new IOException("Connection closed.");
 
@@ -411,13 +437,17 @@ public class AndroidUsbSerialPort implements SerialPort
 
                 private void pushWriteBuffer() throws IOException
                 {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "Call pushWriteBuffer." + " InOut.");
                     synchronized (writeMonitor)
                     {
                         while (isWriting)
                         {
                             try
                             {
-                                logger.debug("Waiting for current write push to complete");
+                                //logger.debug("Waiting for current write push to complete");
+                                if (DEBUG)
+                                    Log.d(TAG+SubTAG, "Call pushWriteBuffer." + " writeMonitor.wait 1");
                                 writeMonitor.wait();
                             }
                             catch (InterruptedException e)
@@ -455,9 +485,12 @@ public class AndroidUsbSerialPort implements SerialPort
                             {
                                 try
                                 {
-                                    logger.debug("Awaiting write request completion");
-
+                                    //logger.debug("Awaiting write request completion");
+                                    if (DEBUG)
+                                        Log.d(TAG+SubTAG, "Call pushWriteBuffer." + " writeMonitor.wait 2, " + TIMEOUT_MS);
                                     writeMonitor.wait(TIMEOUT_MS);
+                                    if (DEBUG)
+                                        Log.d(TAG+SubTAG, "Call pushWriteBuffer." + " writeMonitor.wait 3, " + TIMEOUT_MS);
                                 }
                                 catch (InterruptedException e)
                                 {
@@ -496,27 +529,35 @@ public class AndroidUsbSerialPort implements SerialPort
 
                         if(notifiedRequest==readRequest)
                         {
+                            if (DEBUG)
+                                Log.d(TAG+SubTAG, "Call notificationTask." + " readRequest." + " InOut.");
                             synchronized (readMonitor)
                             {
-                                logger.debug("Notifying read request completion");
-
+                                //logger.debug("Notifying read request completion");
+                                if (DEBUG)
+                                    Log.d(TAG+SubTAG, "Call notificationTask." + " Notifying read request completion." + "readMonitor.notifyAll");
                                 isReading = false;
                                 readMonitor.notifyAll();
                             }
                         }
                         else if(notifiedRequest==writeRequest)
                         {
+                            if (DEBUG)
+                                Log.d(TAG+SubTAG, "Call notificationTask." + " writeRequest." + " InOut.");
                             synchronized (writeMonitor)
                             {
-                                logger.debug("Notifying write request completion");
-
+                                //logger.debug("Notifying write request completion");
+                                if (DEBUG)
+                                    Log.d(TAG+SubTAG, "Call notificationTask." + " Notifying write request completion." + "writeMonitor.notifyAll");
                                 isWriting = false;
                                 writeMonitor.notifyAll();
                             }
                         }
                         else
                         {
-                            logger.debug("Unknown request completed.");
+                            logger.debug("Unknown request completed." + " InOut.");
+                            if (DEBUG)
+                                Log.d(TAG+SubTAG, "Call notificationTask." + " Unknown request complete???");
                         }
                     }
                 }
@@ -536,10 +577,18 @@ public class AndroidUsbSerialPort implements SerialPort
     }
 
     @Override
-    public OutputStream getOutputStream() { return outputStream; }
+    public OutputStream getOutputStream() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call getOutputStream.");
+        return outputStream;
+    }
 
     @Override
-    public InputStream getInputStream()   { return inputStream; }
+    public InputStream getInputStream()   {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call getInputStream.");
+        return inputStream;
+    }
 
     private static final int
             SET_LINE_CODING      = 0x20,
@@ -548,7 +597,8 @@ public class AndroidUsbSerialPort implements SerialPort
 
     private void sendLineCoding() throws IOException
     {
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call sendLineCoding.");
         byte[] lineCodingBytes = getLineCodingBytes(baud,stop,parity,dataBits);
 
         int bytesSent = sendACMControlMessage(SET_LINE_CODING, 0, lineCodingBytes);
@@ -559,11 +609,15 @@ public class AndroidUsbSerialPort implements SerialPort
 
     private int sendACMControlMessage(int request, int value, byte[] message)
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call sendACMControlMessage.");
         return deviceConnection.controlTransfer(USB_ACM_REQUEST_TYPE, request, value, 0, message, message.length, TIMEOUT_MS);
     }
 
     public void close()
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "Call close.");
         boolean isOpen = deviceConnection != null;
 
         if (isOpen)

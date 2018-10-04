@@ -56,7 +56,7 @@ public class ZigBeeDongleTiCc2531Impl implements ZigBeeDongle {
     	this.resetNetwork = resetNetwork;
 
         //networkManager = new ZigBeeNetworkManagerImpl(serialPort, NetworkMode.Coordinator, pan, channel, networkKey, 2500L);
-        networkManager = new ZigBeeNetworkManagerImpl(serialPort, NetworkMode.Router, pan, channel, networkKey, 2500L);
+        networkManager = new ZigBeeNetworkManagerImpl(serialPort, NetworkMode.EndDevice, pan, channel, networkKey, 2500L);
         zclCommandTransmitter = new ZclCommandTransmitter(networkManager);
         zdoCommandTransmitter = new ZdoCommandTransmitter(networkManager);
     }

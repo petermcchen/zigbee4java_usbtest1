@@ -21,6 +21,8 @@
  */
 package org.bubblecloud.zigbee.network.impl;
 
+import android.util.Log;
+
 import org.bubblecloud.zigbee.network.AsynchronousCommandListener;
 import org.bubblecloud.zigbee.network.CommandInterface;
 import org.bubblecloud.zigbee.v3.SerialPort;
@@ -44,6 +46,9 @@ import java.util.*;
  * @author <a href="mailto:christopherhattonuk@gmail.com">Chris Hatton</a>
  */
 public class CommandInterfaceImpl implements ZToolPacketHandler, CommandInterface {
+    private final static String TAG = "CmdInterfaceImpl";
+    private final static String SubTAG = "ZBee";
+    private final static boolean DEBUG = true;
     /**
      * The logger.
      */
@@ -95,10 +100,16 @@ public class CommandInterfaceImpl implements ZToolPacketHandler, CommandInterfac
      */
     @Override
     public boolean open() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "open called");
         if (!port.open()) {
             return false;
         }
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "call ZToolPacketParser with getInputStream");
         parser = new ZToolPacketParser(port.getInputStream(), this);
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "call ZToolPacketParser done");
         return true;
     }
 
@@ -107,6 +118,8 @@ public class CommandInterfaceImpl implements ZToolPacketHandler, CommandInterfac
      */
     @Override
     public void close() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "closed called");
         synchronized (port) {
             if (parser != null) {
                 parser.setClosing();
@@ -285,15 +298,21 @@ public class CommandInterfaceImpl implements ZToolPacketHandler, CommandInterfac
     @Override
     public void sendRaw(int[] packet) throws IOException {
         synchronized (port) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "call sendRaw with getOuputStream");
             final OutputStream out = port.getOutputStream();
             if (out == null) {
                 // Socket has not been opened or is already closed.
                 return;
             }
             for (int i = 0; i < packet.length; i++) {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "call sendRaw." + " d: " + packet[i] + " (" + packet.length + ")");
                 out.write(packet[i]);
             }
             out.flush();
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "call sendRaw done");
         }
     }
 
