@@ -21,6 +21,8 @@
  */
 package org.bubblecloud.zigbee.network.impl;
 
+import android.util.Log;
+
 import org.bouncycastle.util.encoders.Hex;
 import org.bubblecloud.zigbee.network.*;
 import org.bubblecloud.zigbee.network.packet.*;
@@ -57,7 +59,9 @@ import java.util.Set;
  * @author <a href="mailto:chris@cd-jackson.com">Chris Jackson</a>
  */
 public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
-
+    private final static String TAG = "ZBNetworkMgrImpl";
+    private final static String SubTAG = "ZBee";
+    private final static boolean DEBUG = true;
     private final static Logger logger = LoggerFactory.getLogger(ZigBeeNetworkManagerImpl.class);
 
     public static final int DEFAULT_TIMEOUT = 8000;
@@ -125,7 +129,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     private final HashMap<Class<?>, Thread> conversation3Way = new HashMap<Class<?>, Thread>();
 
     public ZigBeeNetworkManagerImpl(SerialPort port, NetworkMode mode, int pan, int channel, byte[] networkKey, long timeout) {
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "ZigBeeNetworkManagerImpl (constructor) called.");
         int aux = RESEND_TIMEOUT_DEFAULT;
         try {
             aux = Integer.parseInt(System.getProperty(RESEND_TIMEOUT_KEY));
@@ -197,6 +202,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public boolean startup() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "startup called.");
         if (state == DriverStatus.CLOSED) {
             state = DriverStatus.CREATED;
             logger.trace("Initializing hardware.");
@@ -204,6 +211,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
             // Open the hardware port
             setState(DriverStatus.HARDWARE_INITIALIZING);
             if (!initializeHardware()) {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "call shutdown 1.");
                 shutdown();
                 return false;
             }
@@ -215,6 +224,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
             			String.format("0x%02x", BOOTLOADER_MAGIC_BYTE));
             	if (!bootloaderGetOut(BOOTLOADER_MAGIC_BYTE)) {
             		logger.warn("Attempt to get out from bootloader failed.");
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "call shutdown 2.");
             		shutdown();
             		return false;
             	}
@@ -229,6 +240,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public void shutdown() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "shutdown called.");
         if (state == DriverStatus.CLOSED) {
             logger.debug("Already CLOSED");
             return;
@@ -247,6 +260,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean initializeHardware() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "initializeHardware called.");
         commandInterface = new CommandInterfaceImpl(port);
         if (!commandInterface.open()) {
             logger.error("Failed to initialize the dongle on port {}.", port);
@@ -257,23 +272,31 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public boolean initializeZigBeeNetwork(boolean cleanStatus) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "initializeZigBeeNetwork called.");
         logger.trace("Initializing network.");
 
         setState(DriverStatus.NETWORK_INITIALIZING);
 
         if (cleanStatus) {
             if (!configureZigBeeNetwork()) {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "call shutdown 3.");
                 shutdown();
                 return false;
             }
         }
         if (!createZigBeeNetwork()) {
             logger.error("Failed to start zigbee network.");
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "call shutdown 4.");
             shutdown();
             return false;
         }
         if (checkZigBeeNetworkConfiguration()) {
             logger.error("Dongle configuration does not match the specified configuration.");
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "call shutdown 5.");
             shutdown();
             return false;
         }
@@ -281,6 +304,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean createZigBeeNetwork() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "createZigBeeNetwork called.");
         createCustomDevicesOnDongle();
         logger.debug("Creating network as {}", mode.toString());
 
@@ -326,9 +351,13 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean checkZigBeeNetworkConfiguration() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "checkZigBeeNetworkConfiguration called.");
         int value;
         long longValue;
         boolean mismatch = false;
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "checkZigBeeNetworkConfiguration called." + " 1v, c: " + getCurrentChannel() + ", " + channel);
         if ((value = getCurrentChannel()) != channel) {
             logger.warn(
                     "The channel configuration differ from the channel configuration in use: " +
@@ -336,10 +365,12 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
                             "The ZigBee network should be reconfigured or configuration corrected.",
                     value, channel
             );
-            mismatch = true;
+            // mismatch = true; TODO...
         }
         // Do not check the current PAN ID if a random one is generated
         // by the dongle.
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "checkZigBeeNetworkConfiguration called." + " 2v, c: " + getCurrentPanId() + ", " + pan);
         if (pan != AUTO_PANID && (value = getCurrentPanId()) != pan) {
             logger.warn(
                     "The PanId configuration differ from the PanId configuration in use: " +
@@ -349,6 +380,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
             );
             mismatch = true;
         }
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "checkZigBeeNetworkConfiguration called." + " 3v, c: " + getExtendedPanId() + ", " + extendedPanId);
         if (extendedPanId != 0 && (longValue = getExtendedPanId()) != extendedPanId) {
             logger.warn(
                     "The ExtendedPanId configuration differ from the ExtendedPanId configuration in use: " +
@@ -356,8 +389,10 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
                             "The ZigBee network should be reconfigured or configuration corrected.",
                     longValue, extendedPanId
             );
-            mismatch = true;
+            // mismatch = true; TODO...
         }
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "checkZigBeeNetworkConfiguration called." + " 4v, c: " + getZigBeeNodeMode() + ", " + mode.ordinal());
         if ((value = getZigBeeNodeMode()) != mode.ordinal()) {
             logger.warn(
                     "The NetworkMode configuration differ from the NetworkMode configuration in use: " +
@@ -368,6 +403,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
             mismatch = true;
         }
 
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "checkZigBeeNetworkConfiguration called." + " 5v, c: " + getZigBeeNetworkKey() + ", " + networkKey);
         if (networkKey != null) {
             final byte[] readNetworkKey = getZigBeeNetworkKey();
             if (readNetworkKey == null) {
@@ -395,6 +432,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean configureZigBeeNetwork() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "configureZigBeeNetwork called.");
         logger.debug("Resetting network stack.");
 
         // Make sure we start clearing configuration and state
@@ -468,6 +507,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private void setState(DriverStatus value) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setState called.");
         logger.trace("{} -> {}", this.state, value);
         synchronized (this) {
             state = value;
@@ -479,6 +520,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private void postHardwareEnabled() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "postHardwareEnabled called.");
         if (!messageListeners.contains(afMessageListenerFilter)) {
             commandInterface.addAsynchronousCommandListener(afMessageListenerFilter);
         }
@@ -488,6 +531,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean waitForHardware() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "waitForHardware called.");
         synchronized (this) {
             while (state == DriverStatus.CREATED || state == DriverStatus.CLOSED) {
                 logger.debug("Waiting for hardware to become ready");
@@ -501,6 +546,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean waitForNetwork() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "waitForNetwork called.");
     	long before = System.currentTimeMillis();
     	boolean timedOut = false;
         synchronized (this) {
@@ -523,6 +570,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public void setZigBeeNodeMode(NetworkMode networkMode) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setZigBeeNodeMode called.");
         if (state != DriverStatus.CLOSED) {
             throw new IllegalStateException("Network mode can be changed only " +
                     "if driver is CLOSED while it is:" + state);
@@ -531,6 +580,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public void setZigBeeNetworkKey(byte[] networkKey) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setZigBeeNetworkKey called.");
         if (state != DriverStatus.CLOSED) {
             throw new IllegalStateException("Network key can be changed only " +
                     "if driver is CLOSED while it is:" + state);
@@ -539,6 +590,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public void setZigBeeNetwork(byte ch, short panId) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setZigBeeNetwork called." + " c, panid: " + ch + ", " + panId);
         if (state != DriverStatus.CLOSED) {
             throw new IllegalStateException("Network mode can be changed only " +
                     "if driver is CLOSED while it is:" + state);
@@ -548,6 +601,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public void setSerialPort(SerialPort port) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setSerialPort called.");
         if (state != DriverStatus.CLOSED) {
             throw new IllegalStateException("Serial port can be changed only " +
                     "if driver is CLOSED while it is:" + state);
@@ -600,7 +655,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public ZDO_MGMT_LQI_RSP sendLQIRequest(ZDO_MGMT_LQI_REQ request) {
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendLQIRequest called.");
         if (!waitForNetwork()) {
         	return null;
         }
@@ -622,6 +678,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public ZDO_IEEE_ADDR_RSP sendZDOIEEEAddressRequest(ZDO_IEEE_ADDR_REQ request) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendZDOIEEEAddressRequest called.");
         if (!waitForNetwork()) {
         	return null;
         }
@@ -643,6 +701,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public ZDO_NODE_DESC_RSP sendZDONodeDescriptionRequest(ZDO_NODE_DESC_REQ request) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendZDONodeDescriptionRequest called.");
         if (!waitForNetwork()) {
         	return null;
         }
@@ -663,6 +723,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public ZDO_POWER_DESC_RSP sendZDOPowerDescriptionRequest(ZDO_POWER_DESC_REQ request) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendZDOPowerDescriptionRequest called.");
         if (!waitForNetwork()) {
         	return null;
         }
@@ -683,6 +745,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public ZDO_ACTIVE_EP_RSP sendZDOActiveEndPointRequest(ZDO_ACTIVE_EP_REQ request) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendZDOActiveEndPointRequest called.");
         if (!waitForNetwork()) {
         	return null;
         }
@@ -704,6 +768,9 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public ZDO_MGMT_PERMIT_JOIN_RSP sendPermitJoinRequest(ZDO_MGMT_PERMIT_JOIN_REQ request, boolean waitForCommand) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendPermitJoinRequest called.");
+
         if (!waitForNetwork()) {
         	return null;
         }
@@ -725,6 +792,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public boolean sendZDOLeaveRequest(ZToolAddress16[] addresses) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendZDOLeaveRequest called.");
         //---------ZDO GET IEEE ADDR
         logger.trace("Reset seq: Trying GETIEEEADDR");
         ZToolAddress64[] longAddresses = new ZToolAddress64[addresses.length];
@@ -838,6 +907,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public ZDO_SIMPLE_DESC_RSP sendZDOSimpleDescriptionRequest(ZDO_SIMPLE_DESC_REQ request) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendZDOSimpleDescriptionRequest called.");
         if (!waitForNetwork()) {
         	return null;
         }
@@ -894,6 +965,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
         
     private boolean dongleSetStartupOption(int mask) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "dongleSetStartupOption called.");
     	if ((mask & ~(STARTOPT_CLEAR_CONFIG | STARTOPT_CLEAR_STATE)) != 0) {
         	logger.warn("Invalid ZCD_NV_STARTUP_OPTION mask {}.", String.format("%08X", mask));
         	return false;
@@ -928,6 +1001,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean dongleSetChannel(int[] channelMask) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "dongleSetChannel called.");
         logger.trace(
                 "Setting the channel to {}{}{}{}", new Object[]{
                 Integer.toHexString(channelMask[0]),
@@ -962,7 +1037,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean dongleSetNetworkMode() {
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "dongleSetNetworkMode called.");
         ZB_WRITE_CONFIGURATION_RSP response =
                 (ZB_WRITE_CONFIGURATION_RSP) sendSynchrouns(
                         commandInterface,
@@ -976,6 +1052,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     private boolean dongleSetPanId() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "dongleSetPanId called.");
         currentPanId = -1;
 
         ZB_WRITE_CONFIGURATION_RSP response =
@@ -994,6 +1072,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
     
     private boolean dongleSetExtendedPanId() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "dongleSetExtendedPanId called.");
         ZB_WRITE_CONFIGURATION_RSP response =
                 (ZB_WRITE_CONFIGURATION_RSP) sendSynchrouns(
                         commandInterface,
@@ -1076,6 +1156,8 @@ public class ZigBeeNetworkManagerImpl implements ZigBeeNetworkManager {
     }
 
     public void sendCommand(final ZToolPacket request) throws ZigBeeException {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "sendCommand called.");
         try {
             commandInterface.sendPacket(request);
         } catch (IOException e) {

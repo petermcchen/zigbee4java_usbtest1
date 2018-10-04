@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -44,6 +45,8 @@ public class MainActivity extends AppCompatActivity
     ZigBeeDongle dongle = null;
     ZigBeeApiDongleImpl api = null;
     UsbManager mUsbManager = null;
+
+    private Handler mStartZigBeeHandler = new Handler();
 
     /*
      * Notifications from UsbService will be received here.
@@ -218,24 +221,52 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
-            byte[] networkKey = null; // Default network key
-            //port = new SerialPortImpl("/dev/ttyACM0");
-            port = new AndroidUsbSerialPort(mUsbManager);
-            //dongle = new ZigBeeDongleTiCc2531Impl(port, 10644, 15, networkKey, false);
-            dongle = new ZigBeeDongleTiCc2531Impl(port, 65535, 15, networkKey, false);
-            api = new ZigBeeApiDongleImpl(dongle, false);
+            /* TODO. Use Runnable...
+                        byte[] networkKey = null; // Default network key
+                        //port = new SerialPortImpl("/dev/ttyACM0");
+                        port = new AndroidUsbSerialPort(mUsbManager);
+                        //dongle = new ZigBeeDongleTiCc2531Impl(port, 10644, 15, networkKey, false);
+                        dongle = new ZigBeeDongleTiCc2531Impl(port, 10644, 15, networkKey, false);
+                        api = new ZigBeeApiDongleImpl(dongle, false);
 
-            api.startup();
+                        api.startup();
+                        */
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "startup zigbee");
+                    byte[] networkKey = null; // Default network key
+                    port = new AndroidUsbSerialPort(mUsbManager);
+                    dongle = new ZigBeeDongleTiCc2531Impl(port, 10644, 15, networkKey, false);
+                    api = new ZigBeeApiDongleImpl(dongle, false);
+
+                    api.startup();
+                }
+            };
+
+            thread.start();
             // Handle the camera action
         } else if (id == R.id.nav_gallery) {
-            if (api == null) {
-                byte[] networkKey = null; // Default network key
-                port = new AndroidUsbSerialPort(mUsbManager);
-                dongle = new ZigBeeDongleTiCc2531Impl(port, 65535, 15, networkKey, false);
-                api = new ZigBeeApiDongleImpl(dongle, false);
-            }
-            api.shutdown();
-            port.close();
+            //if (api == null) {
+            //    byte[] networkKey = null; // Default network key
+            //    port = new AndroidUsbSerialPort(mUsbManager);
+            //    dongle = new ZigBeeDongleTiCc2531Impl(port, 65535, 15, networkKey, false);
+            //    api = new ZigBeeApiDongleImpl(dongle, false);
+            //}
+            //api.shutdown();
+            //port.close();
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "on zigbee device");
+                    api.shutdown();
+                    port.close();
+                }
+            };
+
+            thread.start();
         } else if (id == R.id.nav_slideshow) {
 
         } else if (id == R.id.nav_manage) {
